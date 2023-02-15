@@ -1,59 +1,39 @@
 import * as d3 from 'd3'
 import { type Datum } from './interfaces'
-import { type RokuChart } from './RokuChart'
+import { RokuChart } from './RokuChart'
 import { getMinDifference } from './utils/getMinDifference'
 import { type Config } from './main'
 
-export class RokuBar implements RokuChart {
+export class RokuBar extends RokuChart {
   padding: number = 50
   ayGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
   axGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
   dataGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
-  svg?: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>
-  shape?: DOMRect
-  wrapperDom?: HTMLDivElement
   catalogScale?: any
   valueScale?: any
   data: Datum[] = []
   config: Config = {}
-  private constructor () { }
+  private constructor () {
+    super()
+  }
 
-  static New (selector: string): RokuBar {
+  static New (selector: string) {
     const chart = new RokuBar()
-    chart.initGroups(selector)
-    // resize
+    chart.init(selector)
+    chart.initGroups()
     return chart
   }
 
-  private initGroups (selector: string): void {
-    const wrapper = d3.select<HTMLDivElement, unknown>(selector)
-    const wrapperDom = wrapper.node()
-    if (wrapperDom === null) {
-      throw new Error('wrapper is not exists')
+  private initGroups (): void {
+    if (this.svg === undefined) {
+      throw new Error('svg is not exists')
     }
-    this.wrapperDom = wrapperDom
-    this.shape = wrapperDom.getBoundingClientRect()
-    this.svg = wrapper.append('svg').attr('width', '100%').attr('height', '100%')
     this.dataGroup = this.svg.append('g').attr('class', 'data-group')
     this.axGroup = this.svg.append('g').attr('class', 'x-axis-group')
     this.ayGroup = this.svg.append('g').attr('class', 'y-axis-group')
     if (this.wrapperDom === undefined) {
       throw new Error('wrapper is not exists')
     }
-    let init = true
-    const resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        this.shape = entry.contentRect
-      }
-      if (init) {
-        init = false
-        return
-      }
-      this.draw({
-        animate: false,
-      })
-    })
-    resizeObserver.observe(this.wrapperDom)
   }
 
   setData (data: Datum[]): this {
@@ -82,7 +62,7 @@ export class RokuBar implements RokuChart {
     return scale.base !== undefined
   }
 
-  draw ({ animate = true }: { animate?: boolean }): this {
+  draw ({ animate = true }: { animate?: boolean } = {}): this {
     const data = this.data
     this.updateAxis({ animate })
     const updateAttrs = (g: d3.Selection<any, Datum, SVGGElement, unknown>, r: d3.Selection<SVGRectElement, Datum, SVGGElement, unknown>): void => {

@@ -190,7 +190,7 @@ export class RokuCal extends RokuChart {
     }
     const monthIdx2Name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     const scalePadding = this.config.gap / (this.config.gap + this.config.sideLength)
-    this.svg.attr('width', boxA * rows + this.config.padding * 2).attr('height', boxA * cols + this.config.padding)
+    this.svg.attr('width', boxA * rows + this.config.padding).attr('height', boxA * cols + this.config.padding)
     const visualMapList = this.theme.visualMap
     const visualMapListLength = visualMapList.length
     const colorScale = d3.scaleThreshold(visualMapList).domain(visualMapList.map((_, i) => (1 + i) / visualMapListLength * (valueDomain[1] - valueDomain[0]) + valueDomain[0]))

@@ -1,8 +1,13 @@
 import * as d3 from 'd3'
-import { type Datum } from './interfaces'
+import { type AxisConfig, type Datum } from './interfaces'
 import { RokuChart } from './RokuChart'
 import { getMinDifference } from './utils/getMinDifference'
-import { type Config } from './main'
+
+export interface Config {
+  dataKey?: d3.ValueFn<SVGGElement | d3.BaseType, Datum, KeyType>
+  catalogAxis?: AxisConfig
+  valueAxis?: AxisConfig
+}
 
 export class RokuBar extends RokuChart {
   padding: number = 50
@@ -67,7 +72,7 @@ export class RokuBar extends RokuChart {
     this.updateAxis({ animate })
     const updateAttrs = (g: d3.Selection<any, Datum, SVGGElement, unknown>, r: d3.Selection<SVGRectElement, Datum, SVGGElement, unknown>): void => {
       if (animate ?? true) {
-        console.log('animate', g)
+        // console.log('animate', g)
         r = r.transition('a').delay((_, i) => i * 50) as any
         g = g.transition('b').delay((_, i) => i * 50) as any
       }
@@ -117,7 +122,7 @@ export class RokuBar extends RokuChart {
               return this.catalogScale.bandwidth()
             } else {
               const width = this.getWidth(data)
-              console.log(width)
+              // console.log(width)
               return width
             }
           }).attr('height', 0)
@@ -137,7 +142,7 @@ export class RokuBar extends RokuChart {
     const domain = this.catalogScale.domain()
     const minDiff = getMinDifference(data, (d) => d.id)
     const width = (range[1] - range[0]) / (domain[1] - domain[0]) * minDiff
-    console.log('width', width)
+    // console.log('width', width)
     return width * (1 - padding)
   }
 

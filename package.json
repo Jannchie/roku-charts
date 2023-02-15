@@ -1,17 +1,27 @@
 {
-  "name": "vite-project",
-  "private": true,
+  "name": "roku-charts",
   "version": "0.0.1",
   "type": "module",
+  "author": {
+    "name": "Jannchie",
+    "email": "jannchie@gmail.com"
+  },
+  "license": "MIT",
+  "description": "A vite project",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
+  "peerDependencies": {
+    "d3": "^7.8.2"
+  },
   "devDependencies": {
-    "@jannchie/eslint-config": "^1.0.4",
+    "@jannchie/eslint-config": "^1.0.5",
+    "@types/d3": "^7.4.0",
     "@typescript-eslint/eslint-plugin": "^5.52.0",
     "@typescript-eslint/parser": "^5.52.0",
+    "d3": "^7.8.2",
     "eslint": "^8.34.0",
     "eslint-config-standard-with-typescript": "^34.0.0",
     "eslint-plugin-import": "^2.27.5",
@@ -21,7 +31,6 @@
     "vite": "^4.1.1"
   },
   "dependencies": {
-    "@types/d3": "^7.4.0",
-    "d3": "^7.8.2"
+    "@floating-ui/dom": "^1.2.1"
   }
 }

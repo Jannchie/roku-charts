@@ -24,3 +24,12 @@ export interface AxisConfigDate extends BaseAxisConfig {
 }
 
 export type AxisConfig = AxisConfigBand | AxisConfigLinear | AxisConfigDate
+
+export interface Theme {
+  outlineColor?: string
+  outlineWidth?: number
+  borderRadius?: number
+  outlineOffset?: number
+  nanFillColor?: string
+  visualMap?: string[]
+}

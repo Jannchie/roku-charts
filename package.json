@@ -6,8 +6,18 @@
     "name": "Jannchie",
     "email": "jannchie@gmail.com"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jannchie/roku-charts.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "types": "dist/types/main.d.ts",
+  "main": "dist/roku-charts.umd.cjs",
+  "module": "dist/roku-charts.js",
   "license": "MIT",
-  "description": "A vite project",
+  "description": "Roku Charts is a lightweight chart library that provides a simple and flexible way to create charts in your web applications.",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -28,7 +38,8 @@
     "eslint-plugin-n": "^15.6.1",
     "eslint-plugin-promise": "^6.1.1",
     "typescript": "^4.9.5",
-    "vite": "^4.1.1"
+    "vite": "^4.1.1",
+    "vite-plugin-dts": "^1.7.3"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.2.1"

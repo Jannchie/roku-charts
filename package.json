@@ -1,6 +1,6 @@
 {
   "name": "roku-charts",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "type": "module",
   "author": {
     "name": "Jannchie",
@@ -21,7 +21,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepublish": "pnpm run build"
   },
   "peerDependencies": {
     "d3": "^7.8.2"

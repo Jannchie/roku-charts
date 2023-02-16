@@ -1,4 +1,4 @@
-import { type Theme, type Datum } from './interfaces'
+import { type Datum } from './interfaces'
 import { RokuChart } from './RokuChart'
 import * as d3 from 'd3'
 import { arrow, computePosition, offset } from '@floating-ui/dom'
@@ -45,15 +45,6 @@ export class RokuCal extends RokuChart {
     },
   }
 
-  theme: Required<Theme> = {
-    outlineColor: 'rgba(27, 31, 35, 0.06)',
-    outlineWidth: 1,
-    borderRadius: 2,
-    outlineOffset: -1,
-    nanFillColor: '#ebedf0',
-    visualMap: ['#9be9a8', '#40c463', '#30a14e', '#216e39'],
-  }
-
   weekScale?: d3.ScaleBand<string>
   dataGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
   xAxisGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
@@ -87,11 +78,6 @@ export class RokuCal extends RokuChart {
 
   setConfig (config: RokuCalendarConfig) {
     this.config = { ...this.config, ...config }
-    return this
-  }
-
-  setTheme (theme: Theme) {
-    this.theme = { ...this.theme, ...theme }
     return this
   }
 
@@ -201,6 +187,7 @@ export class RokuCal extends RokuChart {
       .tickValues(['Mon', 'Wed', 'Fri']))
     this.yAxisGroup?.selectAll('.domain').remove()
     this.yAxisGroup?.selectAll('.tick').select('line').remove()
+    this.yAxisGroup?.selectAll('.tick').select('text').attr('style', `color: ${this.theme.textColor}`)
     const xAxisTickFormat = (d: string) => {
       const weeks = Number(d)
 
@@ -215,6 +202,7 @@ export class RokuCal extends RokuChart {
       .tickPadding(0)
       .tickFormat(xAxisTickFormat))
     this.xAxisGroup?.style('font-size', `${this.config.fontSize}px`)
+    this.xAxisGroup?.selectAll('.tick').select('text').attr('style', `color: ${this.theme.textColor}`)
     this.xAxisGroup?.selectAll('.domain').remove()
     this.xAxisGroup?.selectAll('.tick').select('line').remove()
     this.dataGroup?.selectAll<SVGGElement, CalData>('g').data<CalData>(calData, d => d.date).join((enter) => {

@@ -76,7 +76,7 @@ export class RokuBar extends RokuChart {
         r = r.transition('a').delay((_, i) => i * 50) as any
         g = g.transition('b').delay((_, i) => i * 50) as any
       }
-      r.attr('fill', 'DarkSlateGray')
+      r.attr('fill', this.theme.fillColor)
         .attr('width', (_) => {
           if (this.isBandScale(this.catalogScale)) {
             return this.catalogScale.bandwidth()

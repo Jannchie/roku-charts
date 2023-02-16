@@ -1,3 +1,4 @@
+import { defaultTheme, getTheme, type Theme } from './themes/index'
 import * as d3 from 'd3'
 import { type Datum } from './interfaces'
 
@@ -5,13 +6,22 @@ export abstract class RokuChart {
   abstract setData (data: Datum[]): this
   abstract setConfig (config: any): this
   abstract draw (options?: { animate: boolean }): void
+  theme: Theme = defaultTheme
   wrapperDom?: HTMLDivElement
   shape?: DOMRect
   svg?: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>
-
   public init (selector: string) {
     this.initSVG(selector)
     this.initResizeObserver()
+  }
+
+  setTheme (theme: Partial<Theme> | string) {
+    if (typeof theme === 'string') {
+      this.theme = getTheme(theme)
+      return this
+    }
+    this.theme = { ...this.theme, ...theme }
+    return this
   }
 
   private initSVG (selector: string) {

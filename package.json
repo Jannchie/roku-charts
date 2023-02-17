@@ -13,7 +13,7 @@
   "files": [
     "dist"
   ],
-  "types": "dist/types/main.d.ts",
+  "types": "dist/types/index.d.ts",
   "main": "dist/roku-charts.umd.cjs",
   "module": "dist/roku-charts.js",
   "license": "MIT",

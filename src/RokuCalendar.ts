@@ -144,7 +144,7 @@ export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
     const colorScale = d3.scaleThreshold(visualMapList).domain(visualMapList.map((_, i) => (1 + i) / visualMapListLength * (valueDomain[1] - valueDomain[0]) + valueDomain[0]))
     const weekScale = d3.scaleBand().domain(weekDomain).range([0, boxA * rows]).round(true).paddingInner(scalePadding)
     const dayScale = d3.scaleBand().domain(days).range([0, boxA * cols]).round(true).paddingInner(scalePadding)
-    this.yAxisGroup?.call(d3.axisLeft(dayScale)
+    this.yAxisGroup?.transition().call(d3.axisLeft(dayScale)
       .tickPadding(0)
       .tickValues(['Mon', 'Wed', 'Fri']))
     this.yAxisGroup?.selectAll('.domain').remove()
@@ -156,7 +156,7 @@ export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
       const date = new Date(latestDate.getTime() - weeks * 7 * 24 * 60 * 60 * 1000)
       return monthIdx2Name[date.getMonth()]
     }
-    this.xAxisGroup?.call(d3.axisTop(weekScale)
+    this.xAxisGroup?.transition().call(d3.axisTop(weekScale)
       .tickValues(weekScale.domain().filter((_, i) => {
         const domain = weekScale.domain()
         return i !== 0 && xAxisTickFormat(domain[i]) !== xAxisTickFormat(domain[i - 1])
@@ -217,6 +217,19 @@ export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
         })
       })
       return e
+    }, (update) => {
+      update.transition().attr('transform', d => {
+        return `translate(${weekScale(d.week) ?? 0}, ${dayScale(d.day) ?? 0})`
+      })
+      update.selectAll<SVGRectElement, CalData>('rect').attr('rx', this.theme.borderRadius)
+        .attr('width', weekScale.bandwidth())
+        .attr('height', dayScale.bandwidth())
+        .attr('fill', (d: CalData) => { return d.value ? colorScale(d.value) : this.theme.nanFillColor })
+        .attr('style', `outline: 1px solid ${this.theme.outlineColor}; border-radius: ${this.theme.borderRadius}px; outline-offset: ${this.theme.outlineOffset}px;`)
+
+      return update
+    }, (exit) => {
+      return exit.remove()
     })
   }
 

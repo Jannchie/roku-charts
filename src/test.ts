@@ -37,7 +37,13 @@ RokuCal.New('#test-4').setTheme({
   visualMap: d3.schemePuBu[5],
 }).setData(data).setTheme({}).draw({ durationDays: 365 })
 
-RokuCal.New('#test-5').setTheme('dark').setData(data).setTheme({}).draw({ durationDays: 365 })
+const cal = RokuCal.New('#test-5').setTheme('dark').setData(data).setTheme({})
+cal.draw({ durationDays: 365 })
+
+// setInterval(() => {
+//   cal.setConfig({ sideLength: cal.config.sideLength + 1 }).draw()
+// }, 1000)
+
 RokuPie.new('#test-6').setTheme({}).setData([
   { key: '2022-01-01', value: 1 },
   { key: '2022-01-03', value: 1 },

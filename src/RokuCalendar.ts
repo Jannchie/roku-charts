@@ -2,58 +2,17 @@ import { type Datum } from './interfaces'
 import { RokuChart } from './RokuChart'
 import * as d3 from 'd3'
 import { arrow, computePosition, offset } from '@floating-ui/dom'
+import { type RokuCalendarConfig, type CalData, defaultCalendarConfig } from './configs'
 
-interface CalData {
-  value?: number
-  day: string
-  week: string
-  date: string
-}
-
-interface RokuCalendarConfig {
-  sideLength?: number
-  gap?: number
-  padding?: number
-  durationDays?: number
-  padRight?: boolean
-  padLeft?: boolean
-  tooltipFormatter?: (d: CalData) => string
-  fontSize?: number
-  animate?: boolean
-  animateRandom?: number
-  animateDelay?: number
-}
-
-export class RokuCal extends RokuChart {
-  data: Datum[] = []
-  config: Required<RokuCalendarConfig> = {
-    sideLength: 10,
-    gap: 3,
-    padding: 30,
-    durationDays: 0,
-    fontSize: 12,
-    padRight: false,
-    padLeft: true,
-    animate: true,
-    animateRandom: 2,
-    animateDelay: 300,
-    tooltipFormatter: (d: CalData) => {
-      return `
-      <div style="font-weight: bold">
-        ${d.date}</div><div class="tooltip-value">${d.value ?? 'N/A'}
-      </div>`
-    },
-  }
+export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
+  data: CalData[] = []
+  config: Required<RokuCalendarConfig> = defaultCalendarConfig
 
   weekScale?: d3.ScaleBand<string>
   dataGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
   xAxisGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
   yAxisGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
   selector?: string
-  setData (data: Datum[]) {
-    this.data = data
-    return this
-  }
 
   private constructor () {
     super()
@@ -65,6 +24,11 @@ export class RokuCal extends RokuChart {
     chart.init(selector)
     chart.initGroup()
     return chart
+  }
+
+  override setData (data: any[]): this {
+    this.data = data
+    return this
   }
 
   private initGroup () {
@@ -95,10 +59,8 @@ export class RokuCal extends RokuChart {
     return Math.max(weeksAgo, 0)
   }
 
-  draw (config?: RokuCalendarConfig) {
-    if (config) {
-      this.setConfig(config)
-    }
+  draw (cfg?: RokuCalendarConfig) {
+    const config = { ...this.config, ...cfg }
     if (this.svg === undefined) {
       throw new Error('svg is not exists')
     }
@@ -111,17 +73,17 @@ export class RokuCal extends RokuChart {
     if (!startDate || !endDate) {
       throw new Error('startDate or endDate is not exists')
     }
-    if (this.config.durationDays !== 0) {
-      if (startDate > new Date(endDate.getTime() - this.config.durationDays * 86400000)) {
-        startDate = new Date(endDate.getTime() - this.config.durationDays * 86400000)
+    if (config.durationDays !== 0) {
+      if (startDate > new Date(endDate.getTime() - config.durationDays * 86400000)) {
+        startDate = new Date(endDate.getTime() - config.durationDays * 86400000)
       }
     }
     const dateRange = this.getDateRange(startDate, endDate)
     const dataMap = new Map(this.data.map(({ date, value }) => [new Date(date).getTime(), value]))
     this.fillResults(dataMap, dateRange)
     const latestDate = d3.max(this.data, da => new Date(da.date)) ?? new Date()
-    if (this.config.durationDays !== 0) {
-      this.data = this.data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).filter(d => new Date(d.date).getTime() > latestDate.getTime() - this.config.durationDays * 86400000)
+    if (config.durationDays !== 0) {
+      this.data = this.data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).filter(d => new Date(d.date).getTime() > latestDate.getTime() - config.durationDays * 86400000)
     }
     const calData = this.data.map<CalData>(d => {
       const date = new Date(d.date)
@@ -141,10 +103,10 @@ export class RokuCal extends RokuChart {
     const cols = 7
     const rows = new Set(weekDomain).size
     let boxA = d3.min([this.shape.width / rows, this.shape.height / cols]) ?? 0
-    if (this.config.sideLength !== undefined) {
-      boxA = this.config.sideLength + this.config.gap
+    if (config.sideLength !== undefined) {
+      boxA = config.sideLength + config.gap
     }
-    if (this.config.padLeft) {
+    if (config.padLeft) {
       const firstWeek = calData[0].week
       const countFirstWeek = calData.filter(d => d.week === firstWeek).length
       if (countFirstWeek < 7) {
@@ -159,7 +121,7 @@ export class RokuCal extends RokuChart {
         }
       }
     }
-    if (this.config.padRight) {
+    if (config.padRight) {
       const lastWeek = calData[calData.length - 1].week
       const countLastWeek = calData.filter(d => d.week === lastWeek).length
       if (countLastWeek < 7) {
@@ -175,8 +137,8 @@ export class RokuCal extends RokuChart {
       }
     }
     const monthIdx2Name = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    const scalePadding = this.config.gap / (this.config.gap + this.config.sideLength)
-    this.svg.attr('width', boxA * rows + this.config.padding).attr('height', boxA * cols + this.config.padding)
+    const scalePadding = config.gap / (config.gap + config.sideLength)
+    this.svg.attr('width', boxA * rows + config.padding).attr('height', boxA * cols + config.padding)
     const visualMapList = this.theme.visualMap
     const visualMapListLength = visualMapList.length
     const colorScale = d3.scaleThreshold(visualMapList).domain(visualMapList.map((_, i) => (1 + i) / visualMapListLength * (valueDomain[1] - valueDomain[0]) + valueDomain[0]))
@@ -201,15 +163,15 @@ export class RokuCal extends RokuChart {
       }))
       .tickPadding(0)
       .tickFormat(xAxisTickFormat))
-    this.xAxisGroup?.style('font-size', `${this.config.fontSize}px`)
+    this.xAxisGroup?.style('font-size', `${config.fontSize}px`)
     this.xAxisGroup?.selectAll('.tick').select('text').attr('style', `color: ${this.theme.textColor}`)
     this.xAxisGroup?.selectAll('.domain').remove()
     this.xAxisGroup?.selectAll('.tick').select('line').remove()
     this.dataGroup?.selectAll<SVGGElement, CalData>('g').data<CalData>(calData, d => d.date).join((enter) => {
       const e = enter.append('g').attr('transform', d => `translate(${weekScale(d.week) ?? 0}, ${dayScale(d.day) ?? 0})`)
       let rect: any = e.append('rect')
-      if (this.config.animate) {
-        rect = rect.transition().delay((_: CalData, i: number) => this.config.animateDelay * i / e.data().length * Math.random() * this.config.animateRandom)
+      if (config.animate) {
+        rect = rect.transition().delay((_: CalData, i: number) => config.animateDelay * i / e.data().length * Math.random() * config.animateRandom)
       }
       rect.attr('rx', this.theme.borderRadius)
         .attr('width', weekScale.bandwidth())
@@ -223,12 +185,12 @@ export class RokuCal extends RokuChart {
           const tooltipsSelection = d3.select(this.selector ?? 'body').append('div')
             .style('position', 'absolute')
             .style('padding', '0.2rem 0.4rem')
-            .style('font-size', `${this.config.fontSize}px`)
+            .style('font-size', `${config.fontSize}px`)
             .style('color', '#fff')
             .style('background', '#111')
             .style('border-radius', '0.2rem')
             .attr('id', 'roku-tooltip')
-            .html(this.config.tooltipFormatter(data))
+            .html(config.tooltipFormatter(data))
           const arrowEl = tooltipsSelection.append('div')
             .style('position', 'absolute')
             .style('width', '10px')
@@ -259,12 +221,22 @@ export class RokuCal extends RokuChart {
   }
 
   private fillResults (dataMap: Map<number, any>, dateRange: Date[]) {
-    const result = []
+    const result: CalData[] = []
     for (const date of dateRange) {
       if (!dataMap.has(date.getTime())) {
-        result.push({ date: date.toISOString().slice(0, 10), value: null })
+        result.push({
+          date: date.toISOString().slice(0, 10),
+          value: undefined,
+          day: this.getDayFromDate(date),
+          week: String(this.weeksAgo(date, new Date(this.data[this.data.length - 1].date))),
+        })
       } else {
-        result.push({ date: date.toISOString().slice(0, 10), value: dataMap.get(date.getTime()) })
+        result.push({
+          date: date.toISOString().slice(0, 10),
+          value: dataMap.get(date.getTime()),
+          day: this.getDayFromDate(date),
+          week: String(this.weeksAgo(date, new Date(this.data[this.data.length - 1].date))),
+        })
       }
     }
     this.data = result

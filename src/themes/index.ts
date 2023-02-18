@@ -1,4 +1,6 @@
+import * as d3 from 'd3'
 export const defaultTheme = {
+  colors: d3.schemeCategory10,
   outlineColor: 'rgba(27, 31, 35, 0.06)',
   strokeColor: 'rgba(27, 31, 35, 0.1)',
   outlineWidth: 1,

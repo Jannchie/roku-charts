@@ -4,20 +4,31 @@ import { RokuChart } from './RokuChart'
 import { getMinDifference } from './utils/getMinDifference'
 
 export interface Config {
-  dataKey?: d3.ValueFn<SVGGElement | d3.BaseType, Datum, KeyType>
-  catalogAxis?: AxisConfig
-  valueAxis?: AxisConfig
+  dataKey: d3.ValueFn<SVGGElement | d3.BaseType, Datum, KeyType>
+  catalogAxis: AxisConfig
+  valueAxis: AxisConfig
+  animate: number
 }
 
-export class RokuBar extends RokuChart {
+export const defaultBarConfig: Config = {
+  dataKey: (d) => d.key,
+  catalogAxis: {
+    type: 'band',
+  },
+  valueAxis: {
+    type: 'linear',
+  },
+  animate: 500,
+}
+
+export class RokuBar extends RokuChart<Datum, Config> {
   padding: number = 50
   ayGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
   axGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
   dataGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
   catalogScale?: any
   valueScale?: any
-  data: Datum[] = []
-  config: Config = {}
+  config: Config = defaultBarConfig
   private constructor () {
     super()
   }
@@ -46,11 +57,6 @@ export class RokuBar extends RokuChart {
     return this
   }
 
-  setConfig (config: Config): this {
-    this.config = config
-    return this
-  }
-
   isBandScale (scale: any): scale is d3.ScaleBand<any> {
     return scale.bandwidth !== undefined
   }
@@ -67,11 +73,12 @@ export class RokuBar extends RokuChart {
     return scale.base !== undefined
   }
 
-  draw ({ animate = true }: { animate?: boolean } = {}): this {
+  draw (config?: Partial<Config>): this {
+    const cfg = { ...this.config, ...config }
     const data = this.data
-    this.updateAxis({ animate })
+    this.updateAxis(cfg)
     const updateAttrs = (g: d3.Selection<any, Datum, SVGGElement, unknown>, r: d3.Selection<SVGRectElement, Datum, SVGGElement, unknown>): void => {
-      if (animate ?? true) {
+      if (cfg.animate ?? true) {
         // console.log('animate', g)
         r = r.transition('a').delay((_, i) => i * 50) as any
         g = g.transition('b').delay((_, i) => i * 50) as any
@@ -146,7 +153,7 @@ export class RokuBar extends RokuChart {
     return width * (1 - padding)
   }
 
-  private updateAxis ({ animate }: { animate: boolean }): void {
+  private updateAxis (config: Config): void {
     const data = this.data
     this.dataGroup?.attr('transform', `translate(${this.padding}, ${(this.shape?.height ?? 0) - this.padding})`)
     this.axGroup?.attr('transform', `translate(${this.padding}, ${(this.shape?.height ?? 0) - this.padding})`)
@@ -175,7 +182,7 @@ export class RokuBar extends RokuChart {
     }
     const callXAxis = (): void => {
       const xAxis = d3.axisBottom(this.catalogScale)
-      if (animate) {
+      if (config.animate) {
         this.axGroup?.transition().call(xAxis)
       } else {
         this.axGroup?.call(xAxis)
@@ -185,7 +192,7 @@ export class RokuBar extends RokuChart {
     callXAxis()
     const callYAxis = (): void => {
       const yAxis = d3.axisLeft(this.valueScale)
-      if (animate) {
+      if (config.animate) {
         this.ayGroup?.transition().call(yAxis)
       } else {
         this.ayGroup?.call(yAxis)

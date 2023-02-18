@@ -1,3 +1,4 @@
+import { RokuPie } from './RokuPie'
 import { RokuCal } from './RokuCalendar'
 import { type Datum } from './interfaces'
 import { RokuBar } from './RokuBar'
@@ -37,3 +38,10 @@ RokuCal.New('#test-4').setTheme({
 }).setData(data).setTheme({}).draw({ durationDays: 365 })
 
 RokuCal.New('#test-5').setTheme('dark').setData(data).setTheme({}).draw({ durationDays: 365 })
+RokuPie.new('#test-6').setTheme({}).setData([
+  { key: '2022-01-01', value: 1 },
+  { key: '2022-01-03', value: 1 },
+  { key: '2022-01-04', value: 1 },
+  { key: '2022-01-01', value: 1 },
+  { key: '2022-01-06', value: 1 },
+]).setTheme({}).draw()

@@ -34,7 +34,7 @@ const data = [
   // continue with data for the rest of the year...
 ]
 RokuCal.New('#test-4').setTheme({
-  visualMap: d3.schemePuBu[5],
+  visualMap: d3.schemePuBu[5] as string[],
 }).setData(data).setTheme({}).draw({ durationDays: 365 })
 
 const cal = RokuCal.New('#test-5').setTheme('dark').setData(data).setTheme({})
@@ -44,10 +44,16 @@ cal.draw({ durationDays: 365 })
 //   cal.setConfig({ sideLength: cal.config.sideLength + 1 }).draw()
 // }, 1000)
 
-RokuPie.new('#test-6').setTheme({}).setData([
+const pieData = [
   { key: '2022-01-01', value: 1 },
   { key: '2022-01-03', value: 1 },
   { key: '2022-01-04', value: 1 },
-  { key: '2022-01-01', value: 1 },
+  { key: '2022-01-05', value: 1 },
   { key: '2022-01-06', value: 1 },
-]).setTheme({}).draw()
+]
+const pie = RokuPie.new('#test-6').setConfig({ padding: 50 }).setTheme({}).setData(pieData).setTheme({})
+pie.draw()
+setInterval(() => {
+  pieData[0].value += 5
+  pie.draw()
+}, 3000)

@@ -15,8 +15,6 @@ export interface RokuCalendarConfig {
   tooltipFormatter?: (d: CalData) => string
   fontSize?: number
   animate?: boolean
-  animateRandom?: number
-  animateDelay?: number
 }
 
 export const defaultCalendarConfig = {
@@ -28,8 +26,6 @@ export const defaultCalendarConfig = {
   padRight: false,
   padLeft: true,
   animate: true,
-  animateRandom: 2,
-  animateDelay: 300,
   tooltipFormatter: (d: CalData) => {
     return `
       <div style="font-weight: bold">

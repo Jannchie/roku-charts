@@ -171,7 +171,7 @@ export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
       const e = enter.append('g').attr('transform', d => `translate(${weekScale(d.week) ?? 0}, ${dayScale(d.day) ?? 0})`)
       let rect: any = e.append('rect')
       if (config.animate) {
-        rect = rect.transition().delay((_: CalData, i: number) => config.animateDelay * i / e.data().length * Math.random() * config.animateRandom)
+        rect = rect.transition().duration(this.theme.animateDuration).delay((_: CalData, i: number) => this.theme.animateDelay * i / e.data().length * Math.random() * this.theme.animateRandom)
       }
       rect.attr('rx', this.theme.borderRadius)
         .attr('width', weekScale.bandwidth())

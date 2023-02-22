@@ -70,8 +70,11 @@ export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     this.weekScale = d3.scaleBand().domain(days).range([0, this.shape.width])
     let [startDate, endDate] = d3.extent<Datum, Date>(this.data, d => new Date(d.date))
-    if (!startDate || !endDate) {
-      throw new Error('startDate or endDate is not exists')
+    if (!startDate) {
+      startDate = new Date()
+    }
+    if (!endDate) {
+      endDate = new Date()
     }
     if (config.durationDays !== 0) {
       if (startDate > new Date(endDate.getTime() - config.durationDays * 86400000)) {
@@ -94,11 +97,10 @@ export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
         date: d.date,
       }
     })
-
     const valueDomain = d3.extent(calData, d => d.value)
     const weekDomain = calData.map(d => d.week)
-    if (weekDomain[0] === undefined || valueDomain[0] === undefined) {
-      throw new Error('domain\'s value is undefined')
+    if (valueDomain[0] === undefined || weekDomain[0] === undefined) {
+      throw new Error('data is empty')
     }
     const cols = 7
     const rows = new Set(weekDomain).size
@@ -236,19 +238,20 @@ export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
   private fillResults (dataMap: Map<number, any>, dateRange: Date[]) {
     const result: CalData[] = []
     for (const date of dateRange) {
+      const latest = this.data.length === 0 ? new Date() : new Date(this.data[this.data.length - 1].date)
       if (!dataMap.has(date.getTime())) {
         result.push({
           date: date.toISOString().slice(0, 10),
           value: undefined,
           day: this.getDayFromDate(date),
-          week: String(this.weeksAgo(date, new Date(this.data[this.data.length - 1].date))),
+          week: String(this.weeksAgo(date, latest)),
         })
       } else {
         result.push({
           date: date.toISOString().slice(0, 10),
           value: dataMap.get(date.getTime()),
           day: this.getDayFromDate(date),
-          week: String(this.weeksAgo(date, new Date(this.data[this.data.length - 1].date))),
+          week: String(this.weeksAgo(date, latest)),
         })
       }
     }

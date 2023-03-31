@@ -3,6 +3,7 @@ import { RokuCal } from './RokuCalendar'
 import { type Datum } from './interfaces'
 import { RokuBar } from './RokuBar'
 import * as d3 from 'd3'
+window.d3 = d3
 RokuBar.New('#test-1').setConfig({
   dataKey: (d: Datum) => d.id,
 }).setData([{ id: '3', value: 4 }, { id: 'bbb', value: 1 }, { id: 'ccc', value: 3 }, { id: 'ddd', value: 5 }]).draw({})
@@ -33,9 +34,9 @@ const data = [
   { date: '2022-01-31', value: 56 },
   // continue with data for the rest of the year...
 ]
-RokuCal.New('#test-4').setTheme({
-  visualMap: d3.schemePuBu[5] as string[],
-}).setData(data).setTheme({}).draw({ durationDays: 365 })
+// RokuCal.New('#test-4').setTheme({
+//   visualMap: d3.schemePuBu[5] as string[],
+// }).setData(data).setTheme({}).draw({ durationDays: 365 })
 
 const cal = RokuCal.New('#test-5').setTheme('dark').setData(data).setTheme({})
 cal.draw({ durationDays: 365 })
@@ -53,7 +54,10 @@ const pieData = [
 ]
 const pie = RokuPie.new('#test-6').setConfig({ padding: 50 }).setTheme({}).setData(pieData).setTheme({})
 pie.draw()
-setInterval(() => {
-  pieData[0].value += 5
-  pie.draw()
-}, 3000)
+setTimeout(() => {
+  const data = [
+    { date: '2022-01-01', value: 34 },
+    { date: '2022-01-30', value: 28 },
+  ]
+  cal.setData(data).draw({ durationDays: 365 })
+}, 1000)

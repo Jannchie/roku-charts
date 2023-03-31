@@ -141,7 +141,9 @@ export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
     this.svg.attr('width', boxA * rows + config.padding).attr('height', boxA * cols + config.padding)
     const visualMapList = this.theme.visualMap
     const visualMapListLength = visualMapList.length
-    const colorScale = d3.scaleThreshold(visualMapList).domain(visualMapList.map((_, i) => (1 + i) / visualMapListLength * (valueDomain[1] - valueDomain[0]) + valueDomain[0]))
+    const colorScale = d3
+      .scaleThreshold([...visualMapList])
+      .domain(visualMapList.map((_, i) => (1 + i) / visualMapListLength * (valueDomain[1] - valueDomain[0]) + valueDomain[0]))
     const weekScale = d3.scaleBand().domain(weekDomain).range([0, boxA * rows]).round(true).paddingInner(scalePadding)
     const dayScale = d3.scaleBand().domain(days).range([0, boxA * cols]).round(true).paddingInner(scalePadding)
     this.yAxisGroup?.transition().call(d3.axisLeft(dayScale)
@@ -167,7 +169,9 @@ export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
     this.xAxisGroup?.selectAll('.tick').select('text').attr('style', `color: ${this.theme.textColor}`)
     this.xAxisGroup?.selectAll('.domain').remove()
     this.xAxisGroup?.selectAll('.tick').select('line').remove()
-    this.dataGroup?.selectAll<SVGGElement, CalData>('g').data<CalData>(calData, d => d.date).join((enter) => {
+    if (!this.dataGroup) return
+    const binded = this.dataGroup.selectAll<SVGGElement, CalData>('g').data<CalData>(calData, d => d.date)
+    binded.join((enter) => {
       const e = enter.append('g').attr('transform', d => `translate(${weekScale(d.week) ?? 0}, ${dayScale(d.day) ?? 0})`)
       let rect: any = e.append('rect')
       if (config.animate) {
@@ -176,9 +180,10 @@ export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
       rect.attr('rx', this.theme.borderRadius)
         .attr('width', weekScale.bandwidth())
         .attr('height', dayScale.bandwidth())
-        .attr('fill', (d: CalData) => { return d.value ? colorScale(d.value) : this.theme.nanFillColor })
+        .attr('fill', (d: CalData) => {
+          return d.value ? colorScale(d.value) : this.theme.nanFillColor
+        })
         .attr('style', `outline: 1px solid ${this.theme.outlineColor}; border-radius: ${this.theme.borderRadius}px; outline-offset: ${this.theme.outlineOffset}px;`)
-
       e.nodes().forEach((dom) => {
         dom.addEventListener('mouseenter', () => {
           const data = d3.select<SVGGElement, CalData>(dom).datum()
@@ -221,12 +226,14 @@ export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
       update.transition().attr('transform', d => {
         return `translate(${weekScale(d.week) ?? 0}, ${dayScale(d.day) ?? 0})`
       })
-      update.selectAll<SVGRectElement, CalData>('rect').attr('rx', this.theme.borderRadius)
+      update.selectAll<SVGRectElement, CalData>('rect').data(update.data(), d => d.date).attr('rx', this.theme.borderRadius)
         .attr('width', weekScale.bandwidth())
         .attr('height', dayScale.bandwidth())
-        .attr('fill', (d: CalData) => { return d.value ? colorScale(d.value) : this.theme.nanFillColor })
+        .transition().duration(100)
+        .attr('fill', (d: CalData) => {
+          return d.value ? colorScale(d.value) : this.theme.nanFillColor
+        })
         .attr('style', `outline: 1px solid ${this.theme.outlineColor}; border-radius: ${this.theme.borderRadius}px; outline-offset: ${this.theme.outlineOffset}px;`)
-
       return update
     }, (exit) => {
       return exit.remove()

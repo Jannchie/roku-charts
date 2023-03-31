@@ -231,7 +231,6 @@ export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
       update.selectAll<SVGRectElement, CalData>('rect').data(update.data(), d => d.date).attr('rx', this.theme.borderRadius)
         .attr('width', weekScale.bandwidth())
         .attr('height', dayScale.bandwidth())
-        .transition().duration(100)
         .attr('fill', (d: CalData) => {
           return d.value ? colorScale(d.value) : this.theme.nanFillColor
         })

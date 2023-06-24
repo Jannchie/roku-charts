@@ -61,8 +61,9 @@ const pieData = [
   { key: '2022-01-01', value: 1 },
   { key: '2022-01-03', value: 1 },
   { key: '2022-01-04', value: 1 },
-  { key: '2022-01-05', value: 1 },
+  { key: '2022-01-05', value: 3 },
   { key: '2022-01-06', value: 1 },
 ]
+
 const pie = RokuPie.new('#test-6').setConfig({ padding: 50 }).setTheme({}).setData(pieData)
 pie.draw()

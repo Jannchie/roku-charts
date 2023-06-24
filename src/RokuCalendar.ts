@@ -76,10 +76,8 @@ export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
     if (!endDate) {
       endDate = new Date()
     }
-    if (config.durationDays !== 0) {
-      if (startDate > new Date(endDate.getTime() - config.durationDays * 86400000)) {
-        startDate = new Date(endDate.getTime() - config.durationDays * 86400000)
-      }
+    if (config.durationDays !== 0 && startDate > new Date(endDate.getTime() - config.durationDays * 86400000)) {
+      startDate = new Date(endDate.getTime() - config.durationDays * 86400000)
     }
     const dateRange = this.getDateRange(startDate, endDate)
     const dataMap = new Map(this.data.map(({ date, value }) => [new Date(date).getTime(), value]))

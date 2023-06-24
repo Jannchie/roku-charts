@@ -13,6 +13,13 @@
   "files": [
     "dist"
   ],
+  "exports": {
+    ".": {
+      "require": "./dist/roku-charts.umd.cjs",
+      "import": "./dist/roku-charts.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
   "types": "dist/types/index.d.ts",
   "main": "dist/roku-charts.umd.cjs",
   "module": "dist/roku-charts.js",

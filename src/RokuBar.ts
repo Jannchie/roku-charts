@@ -8,6 +8,7 @@ export interface Config {
   animate: number
   stepWidth?: number
   itemCount: number
+  padding?: number
   onHover?: (d: Datum) => void
 }
 
@@ -16,6 +17,7 @@ export const defaultBarConfig: Config = {
   valueKey: (d) => d.value,
   animate: 500,
   itemCount: 10,
+  padding: 0,
 }
 
 export class RokuBar extends RokuChart<Datum, Config> {
@@ -26,18 +28,18 @@ export class RokuBar extends RokuChart<Datum, Config> {
   catalogScale?: d3.ScaleBand<never> | d3.ScaleLinear<never, never> | d3.ScaleTime<never, never>
   valueScale?: d3.ScaleLinear<never, never>
   config: Config = defaultBarConfig
-  private constructor () {
+  private constructor() {
     super()
   }
 
-  static new (selector: string) {
+  static new(selector: string) {
     const chart = new RokuBar()
     chart.init(selector)
     chart.initGroups()
     return chart
   }
 
-  private initGroups (): void {
+  private initGroups(): void {
     if (this.svg === undefined) {
       throw new Error('svg is not exists')
     }
@@ -49,32 +51,32 @@ export class RokuBar extends RokuChart<Datum, Config> {
     }
   }
 
-  setData (data: Datum[]): this {
+  setData(data: Datum[]): this {
     this.data = data
     return this
   }
 
-  private idIsDate (data: Datum[]): data is ({ _id: Date })[] {
+  private idIsDate(data: Datum[]): data is ({ _id: Date })[] {
     return data[0]._id instanceof Date
   }
 
-  private idIsNumber (data: Datum[]): data is ({ _id: number })[] {
+  private idIsNumber(data: Datum[]): data is ({ _id: number })[] {
     return typeof data[0]._id === 'number'
   }
 
-  private idIsString (data: Datum[]): data is ({ _id: string })[] {
+  private idIsString(data: Datum[]): data is ({ _id: string })[] {
     return typeof data[0]._id === 'string'
   }
 
 
-  private isScaleBand (scale: object): scale is d3.ScaleBand<never> {
+  private isScaleBand(scale: object): scale is d3.ScaleBand<never> {
     return scale.hasOwnProperty('bandwidth')
   }
-  private isScaleTime (scale: object): scale is d3.ScaleTime<never, never> {
+  private isScaleTime(scale: object): scale is d3.ScaleTime<never, never> {
     return scale.hasOwnProperty('ticks')
   }
 
-  draw (config?: Partial<Config>): this {
+  draw(config?: Partial<Config>): this {
     if (this.svg === undefined) {
       throw new Error('svg is not exists')
     }
@@ -85,6 +87,8 @@ export class RokuBar extends RokuChart<Datum, Config> {
       throw new Error('dataGroup is not exists')
     }
     const cfg = { ...this.config, ...config }
+    this.config = cfg
+    this.padding = cfg.padding ? cfg.padding : this.padding
     const data = this.data.map((d, i, arr) => ({
       ...d,
       _value: cfg.valueKey(d, i, arr),
@@ -128,7 +132,7 @@ export class RokuBar extends RokuChart<Datum, Config> {
             if (this.isScaleBand(scaleX)) {
               return scaleX.bandwidth()
             }
-            return stepWidth * (1-this.theme.gap)
+            return stepWidth * (1 - this.theme.gap)
           })
           .attr('fill', this.theme.itemBGColor)
           .attr('x', (d) => {
@@ -247,7 +251,7 @@ export class RokuBar extends RokuChart<Datum, Config> {
     return this
   }
 
-  private getScaleY (data: { _value: number }[]) {
+  private getScaleY(data: { _value: number }[]) {
     if (this.shape === undefined) {
       throw new Error('shape is not exists')
     }
@@ -255,7 +259,7 @@ export class RokuBar extends RokuChart<Datum, Config> {
     return scale
   }
 
-  private getScaleX (data: { _value: number; _id: string | number | Date }[], barWidth = 20) {
+  private getScaleX(data: { _value: number; _id: string | number | Date }[], barWidth = 20) {
     let scale
     if (this.idIsDate(data)) {
       const domain = d3.extent(data, (d) => d._id)

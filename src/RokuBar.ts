@@ -272,7 +272,7 @@ export class RokuBar extends RokuChart<Datum, Config> {
         throw new Error('domain is not exists')
       }
       domain[1] = new Date((domain[1] as Date).getTime() + minDeltaTime)
-      scale = d3.scaleTime().domain(domain).range([0, range]).nice()
+      scale = d3.scaleTime().domain(domain).range([0, range])
     }
     if (this.idIsString(data)) {
       scale = d3.scaleBand().domain(d3.map(data, (d) => d._id)).range([0, this.shape.width - this.padding * 2]).padding(0.1)

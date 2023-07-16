@@ -1,17 +1,10 @@
-import { type CalData } from './configs/index'
 import { RokuPie } from './RokuPie'
 import { RokuCal } from './RokuCalendar'
 import { type Datum } from './interfaces'
 import { RokuBar } from './RokuBar'
 import * as d3 from 'd3'
+import { CalData } from './configs'
 window.d3 = d3
-RokuBar.New('#test-1').setConfig({
-  dataKey: (d: Datum) => d.id,
-}).setData([{ id: '3', value: 4 }, { id: 'bbb', value: 1 }, { id: 'ccc', value: 3 }, { id: 'ddd', value: 5 }]).draw({})
-RokuBar.New('#test-2').setData([{ id: new Date(1000), value: 4 }, { id: new Date(4000), value: 5 }, { id: new Date(10000), value: 3 }, { id: new Date(20000), value: 8 }]).draw({})
-RokuBar.New('#test-3').setData([{ id: new Date(1000), value: 4 }, { id: new Date(4000), value: 5 }, { id: new Date(10000), value: 3 }, { id: new Date(20000), value: 8 }]).draw({})
-// RokuChart.New('#test-1').setData([{ id:  1, value: 4 }, { id:  2, value: 1 }, { id:  3, value: 3 }]).draw({})
-
 const data = [
   { date: '2022-01-01', value: 34 },
   { date: '2022-01-02', value: 8 },
@@ -32,25 +25,27 @@ const data = [
   { date: '2022-01-27', value: 10 },
   { date: '2022-01-29', value: 22 },
   { date: '2022-01-30', value: 28 },
-  { date: '2022-01-31', value: 56 },
+  { date: '2022-01-31', value: 52 },
   // continue with data for the rest of the year...
 ] as CalData[]
-const c = RokuCal.New('#test-4').setTheme({
-  visualMap: d3.schemePuBu[5] as string[],
-}).setData(data).setTheme({
-  nanFillColor: 'var(--r-color-2)',
-})
+RokuBar.new('#test-1').setConfig({ idKey: (d: Datum) => d.id }).setData([{ id: '3', value: 4 }, { id: 'bbb', value: 1 }, { id: 'ccc', value: 3 }, { id: 'ddd', value: 5 }]).draw()
+RokuBar.new('#test-3').setData(data).setConfig({
+  idKey: (d) => d3.timeParse('%Y-%m-%d')(d.date)!, onHover: () => { },
+}).draw()
+// RokuChart.New('#test-1').setData([{ id:  1, value: 4 }, { id:  2, value: 1 }, { id:  3, value: 3 }]).draw({})
+
+
+const c = RokuCal.New('#test-4').setTheme({ visualMap: d3.schemePuBu[5] as string[] }).setData(data).setTheme({ nanFillColor: 'var(--r-color-2)' })
 c.draw({ durationDays: 365 })
 setTimeout(() => {
   const data = [
     { date: '2022-01-01', value: 34 },
     { date: '2022-01-30', value: 28 },
-  ]
+  ] as CalData[]
   c.setData(data).draw({ durationDays: 365 })
 }, 3000)
 
-const cal = RokuCal.New('#test-5').setTheme('dark').setData(data).setTheme({
-})
+const cal = RokuCal.New('#test-5').setTheme('dark').setData(data).setTheme({})
 cal.draw({ durationDays: 365 })
 
 // setInterval(() => {

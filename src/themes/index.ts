@@ -9,10 +9,16 @@ export const defaultTheme = {
   visualMap: d3.schemeBuGn[6].slice(1) as string[] | readonly string[],
   colorScheme: d3.schemeTableau10,
   fillColor: 'DarkSlateGray',
+  lineColor: '#333',
   textColor: '#333',
+  itemBGColor: '#0000',
   animateRandom: 0,
+  gap: 0.2,
   animateDelay: 300,
   animateDuration: 500,
+  valueFormat: d3.format('.2s'),
+  labelFormat: (d: string) => d,
+  timeFormat: (d: Date) => d3.timeFormat('%Y-%m-%d')(d),
 }
 
 export const darkTheme = {

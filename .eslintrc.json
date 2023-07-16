@@ -1,0 +1,25 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "extends": [
+    "@jannchie"
+  ],
+  "parserOptions": {
+    "project": "./tsconfig.json",
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "settings": {
+    "react": {
+      "version": "18"
+    }
+  },
+  "ignorePatterns": [
+    "doc/*"
+  ],
+  "include": [
+    "vite.config.js"
+  ]
+}

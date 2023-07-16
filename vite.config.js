@@ -17,10 +17,10 @@ export default defineConfig({
       external: ['d3'],
       output: {
         // Provide global variables to use in the UMD build
-        // for externalized deps
+        name: 'RokuCharts',
         globals: {
-          vue: 'RokuCharts',
-        },
+          d3: 'd3'
+        }
       },
     },
   },

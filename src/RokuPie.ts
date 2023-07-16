@@ -9,8 +9,8 @@ export interface PieDatum {
 export const defaultPieConfig = {
   dataKey: ((d) => d.key) as d3.ValueFn<d3.BaseType, PieDatum, string>,
   valueKey: ((d) => d.value) as d3.ValueFn<d3.BaseType, PieDatum, number>,
-  innerRadius: 90 as number | ((d: PieDatum, ...args: any[]) => number),
-  outerRadius: 0 as number | ((d: PieDatum, ...args: any[]) => number),
+  innerRadius: 90 as number | ((d: PieDatum, ...args: unknown[]) => number),
+  outerRadius: 0 as number | ((d: PieDatum, ...args: unknown[]) => number),
   padding: 20,
 }
 export type PieConfig = typeof defaultPieConfig
@@ -19,7 +19,7 @@ export class RokuPie extends RokuChart<PieDatum, PieConfig> {
   data = [] as PieDatum[]
   theme: Theme = defaultTheme
   config = defaultPieConfig
-  group?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
+  group?: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>
   public init (selector: string) {
     super.init(selector)
     this.group = this.svg?.append('g').attr('class', 'data-group')
@@ -59,8 +59,8 @@ export class RokuPie extends RokuChart<PieDatum, PieConfig> {
 
     const arcs = this.group.selectAll<SVGPathElement, d3.PieArcDatum<PieDatum>>('g').data(pie(this.data), key => key.data.key)
     const arc = d3.arc<d3.PieArcDatum<PieDatum>>()
-      .innerRadius(config.innerRadius as any)
-      .outerRadius(outerRadius as any)
+      .innerRadius(config.innerRadius as never)
+      .outerRadius(outerRadius as never)
       .cornerRadius(2)
       .padAngle(0.1)
 
@@ -69,8 +69,8 @@ export class RokuPie extends RokuChart<PieDatum, PieConfig> {
         this.group?.attr('transform', `translate(${size / 2}, ${size / 2}) rotate(-90)`).transition('A').duration(this.theme.animateDuration).attr('transform', `translate(${size / 2}, ${size / 2}) rotate(0)`)
       }
       const arcStart = d3.arc<d3.PieArcDatum<PieDatum>>()
-        .innerRadius(config.innerRadius as any * 0.1)
-        .outerRadius(outerRadius as any * 0.5)
+        .innerRadius(config.innerRadius as never * 0.1)
+        .outerRadius(outerRadius as never * 0.5)
         .cornerRadius(2)
         .padAngle(0.1)
 
@@ -125,7 +125,7 @@ export class RokuPie extends RokuChart<PieDatum, PieConfig> {
         .selectAll<never, d3.PieArcDatum<PieDatum>>('path')
         .data(update.data(), d => d.data.key).transition()
         .duration(this.theme.animateDuration)
-        .attrTween('d', c as any)
+        .attrTween('d', c as never)
       return update
     })
   }

@@ -1,39 +1,36 @@
 import * as d3 from 'd3'
-import { type AxisConfig, type Datum } from './interfaces'
+import { type Datum } from './interfaces'
 import { RokuChart } from './RokuChart'
-import { getMinDifference } from './utils/getMinDifference'
 
 export interface Config {
-  dataKey: d3.ValueFn<SVGGElement | d3.BaseType, Datum, KeyType>
-  catalogAxis: AxisConfig
-  valueAxis: AxisConfig
+  idKey: (d: Datum, i?: number, arr?: Datum[]) => string | number | Date
+  valueKey: (d: Datum, i?: number, arr?: Datum[]) => number
   animate: number
+  stepWidth?: number
+  itemCount: number
+  onHover?: (d: Datum) => void
 }
 
 export const defaultBarConfig: Config = {
-  dataKey: (d) => d.key,
-  catalogAxis: {
-    type: 'band',
-  },
-  valueAxis: {
-    type: 'linear',
-  },
+  idKey: (d) => d.id,
+  valueKey: (d) => d.value,
   animate: 500,
+  itemCount: 10,
 }
 
 export class RokuBar extends RokuChart<Datum, Config> {
   padding: number = 50
-  ayGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
-  axGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
-  dataGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
-  catalogScale?: any
-  valueScale?: any
+  ayGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, never>
+  axGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, never>
+  dataGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, never>
+  catalogScale?: d3.ScaleBand<never> | d3.ScaleLinear<never, never> | d3.ScaleTime<never, never>
+  valueScale?: d3.ScaleLinear<never, never>
   config: Config = defaultBarConfig
   private constructor () {
     super()
   }
 
-  static New (selector: string) {
+  static new (selector: string) {
     const chart = new RokuBar()
     chart.init(selector)
     chart.initGroups()
@@ -57,159 +54,239 @@ export class RokuBar extends RokuChart<Datum, Config> {
     return this
   }
 
-  isBandScale (scale: any): scale is d3.ScaleBand<any> {
-    return scale.bandwidth !== undefined
+  private idIsDate (data: Datum[]): data is ({ _id: Date })[] {
+    return data[0]._id instanceof Date
   }
 
-  isLinearScale (scale: any): scale is d3.ScaleLinear<any, any> {
-    return scale.rangeRound !== undefined
+  private idIsNumber (data: Datum[]): data is ({ _id: number })[] {
+    return typeof data[0]._id === 'number'
   }
 
-  isTimeScale (scale: any): scale is d3.ScaleTime<any, any> {
-    return scale.rangeRound !== undefined
+  private idIsString (data: Datum[]): data is ({ _id: string })[] {
+    return typeof data[0]._id === 'string'
   }
 
-  isLogScale (scale: any): scale is d3.ScaleLogarithmic<any, any> {
-    return scale.base !== undefined
+
+  private isScaleBand (scale: object): scale is d3.ScaleBand<never> {
+    return scale.hasOwnProperty('bandwidth')
+  }
+  private isScaleTime (scale: object): scale is d3.ScaleTime<never, never> {
+    return scale.hasOwnProperty('ticks')
   }
 
   draw (config?: Partial<Config>): this {
+    if (this.svg === undefined) {
+      throw new Error('svg is not exists')
+    }
+    if (this.axGroup === undefined || this.ayGroup === undefined) {
+      throw new Error('axGroup or ayGroup is not exists')
+    }
+    if (this.dataGroup === undefined) {
+      throw new Error('dataGroup is not exists')
+    }
     const cfg = { ...this.config, ...config }
-    const data = this.data
-    this.updateAxis(cfg)
-    const updateAttrs = (g: d3.Selection<any, Datum, SVGGElement, unknown>, r: d3.Selection<SVGRectElement, Datum, SVGGElement, unknown>): void => {
-      if (cfg.animate ?? true) {
-        // console.log('animate', g)
-        r = r.transition('a').delay((_, i) => i * 50) as any
-        g = g.transition('b').delay((_, i) => i * 50) as any
+    const data = this.data.map((d, i, arr) => ({
+      ...d,
+      _value: cfg.valueKey(d, i, arr),
+      _id: cfg.idKey(d, i, arr),
+    }))
+    const innerWidth = this.shape.width - this.padding * 2
+    const innerHeight = this.shape.height - this.padding * 2
+    const cfgStepWidth = (cfg.stepWidth ? cfg.stepWidth : innerWidth / cfg.itemCount)
+    const scaleX = this.getScaleX(data, cfgStepWidth)
+    const stepWidth = this.isScaleBand(scaleX) ? scaleX.step() : cfgStepWidth
+    const initYOffset = innerWidth - scaleX.range()[1]!
+    this.dataGroup.attr('transform', `translate(${this.padding}, ${this.padding})`)
+    const clipGroup = this.dataGroup.append('g').attr('clip-path', 'url(#clip)')
+    this.svg.append('defs').append('clipPath').attr('id', 'clip').append('rect').attr('width', innerWidth).attr('height', this.shape.height)
+    const dataGroup = clipGroup.append('g').attr('transform', `translate(${initYOffset}, 0)`)
+
+    const showingData = data.filter((d) => {
+      if (this.isScaleTime(scaleX)) {
+        const val = scaleX(d._id as never)
+        return val >= -initYOffset && val <= -initYOffset + innerWidth
       }
-      r.attr('fill', this.theme.fillColor)
-        .attr('width', (_) => {
-          if (this.isBandScale(this.catalogScale)) {
-            return this.catalogScale.bandwidth()
-          } else {
-            const width = this.getWidth(data)
-            // TODO: with as value
-            return width
-          }
-        })
-        .attr('height', d => {
-          if (this.isBandScale(this.valueScale)) {
-            return this.valueScale.bandwidth()
-          } else {
-            return (this.shape?.height ?? 0) - this.padding - this.valueScale(d.value)
-          }
-        })
-      g.attr('transform', d => {
-        if (this.isBandScale(this.catalogScale)) {
-          return `translate(${this.catalogScale(d.id) ?? 0}, ${this.valueScale(d.value) - (this.shape?.height ?? 0) + this.padding})`
+      return true
+    })
+
+    let scaleY = this.getScaleY(showingData)
+    const ayGroup = this.ayGroup
+      .attr('transform', `translate(${this.shape.width - this.padding}, ${this.padding})`)
+
+    ayGroup.call(d3.axisRight(scaleY).tickFormat(this.theme.valueFormat))
+    ayGroup.selectAll('text').attr('fill', this.theme.textColor)
+    ayGroup.selectAll('line, path').attr('stroke', this.theme.lineColor)
+
+    dataGroup.selectAll('g').data(data).join(
+      (enter) => {
+        const res = enter.append('g')
+
+        res.append('rect')
+          .attr('class', 'bar-bg')
+          .attr('height', innerHeight)
+          .attr('width', () => {
+            if (this.isScaleBand(scaleX)) {
+              return scaleX.bandwidth()
+            }
+            return stepWidth * (1-this.theme.gap)
+          })
+          .attr('fill', this.theme.itemBGColor)
+          .attr('x', (d) => {
+            if (this.isScaleTime(scaleX)) {
+              return scaleX(d._id as never)
+            }
+            return scaleX(d._id as never) || 0
+          })
+        res.append('rect')
+          .attr('class', 'bar')
+          .attr('height', d => innerHeight - scaleY(d._value) || 0)
+          .attr('width', () => {
+            if (this.isScaleBand(scaleX)) {
+              return scaleX.bandwidth()
+            }
+            return stepWidth * 0.8
+          })
+          // radius
+          .attr('rx', this.theme.borderRadius)
+          .attr('fill', this.theme.fillColor)
+          .attr('x', (d) => {
+            if (this.isScaleTime(scaleX)) {
+              return scaleX(d._id as never)
+            }
+            return scaleX(d._id as never) || 0
+          })
+          .attr('y', (d) => {
+            if (this.shape === undefined) {
+              throw new Error('shape is not exists')
+            }
+            return scaleY(d._value)
+          })
+        return res
+      },
+      (update) => update,
+      (exit) => exit.remove(),
+    )
+
+
+    const axGroup = this.axGroup
+      .attr('clip-path', 'url(#clip)')
+      .attr('transform', `translate(${this.padding}, ${this.shape.height - this.padding})`)
+      .append('g')
+      .call(d3.axisBottom(scaleX as never))
+    axGroup.attr('transform', `translate(${initYOffset}, 0)`)
+    axGroup.selectAll('text').attr('fill', this.theme.textColor)
+    axGroup.selectAll('line, path').attr('stroke', this.theme.lineColor)
+    let startX = 0
+    const drag = d3.drag()
+      .on('start', function (e: d3.D3DragEvent<SVGGElement, unknown, unknown>) {
+        const currentX = Number(dataGroup.attr('transform').match(/translate\((-?\d+\.?\d*), (-?\d+\.?\d*)\)/)?.[1])
+        if (isNaN(currentX)) {
+          return
         }
-        let offset = 0
-        offset = this.getWidth(data) / 2
-        const x = this.catalogScale(d.id) as number - offset
-        return `translate(${x}, ${(this.valueScale(d.value) as number) + this.padding - (this.shape?.height ?? 0)})`
+        startX = e.x - currentX
+      })
+      .on('drag', (e: d3.D3DragEvent<SVGGElement, unknown, unknown>) => {
+        let deltaX = e.x - startX
+        if (deltaX > 0) {
+          deltaX = 0
+        } else if (innerWidth - deltaX > scaleX.range()[1]) {
+          deltaX = innerWidth - scaleX.range()[1]
+        }
+        dataGroup.attr('transform', `translate(${deltaX}, ${0})`)
+        axGroup.attr('transform', `translate(${deltaX}, 0)`)
+      })
+      .on('end', () => {
+        const currentX = Number(dataGroup.attr('transform').match(/translate\((-?\d+\.?\d*), (-?\d+\.?\d*)\)/)?.[1])
+        const targetX = Math.round(currentX / stepWidth) * (stepWidth)
+        dataGroup.transition().attr('transform', `translate(${targetX}, ${0})`)
+        axGroup.transition().attr('transform', `translate(${targetX}, 0)`)
+        const showingData = data.filter((d) => {
+          if (this.isScaleTime(scaleX)) {
+            const val = scaleX(d._id as never)
+            return val >= -targetX && val <= -targetX + innerWidth - stepWidth
+          }
+          return true
+        })
+        scaleY = this.getScaleY(showingData)
+        ayGroup.transition().call(d3.axisRight(scaleY).tickFormat(this.theme.valueFormat))
+        ayGroup.selectAll('text').attr('fill', this.theme.textColor)
+        ayGroup.selectAll('line, path').attr('stroke', this.theme.lineColor)
+        dataGroup.selectAll('.bar').transition().attr('height', (d) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return innerHeight - scaleY((d as any)._value) || 0
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        }).attr('y', (d) => scaleY((d as any)._value))
+        d3.selectAll('.hover-line').remove()
+      });
+    this.svg.call(drag as never)
+    if (cfg.onHover) {
+      let lastDatum: Datum | null = null
+      this.svg.on('mousemove', (e: MouseEvent) => {
+        e.stopPropagation()
+        const target = e.target
+        if (target) {
+          const datum = d3.select<never, Datum>(target as never).datum()
+          if (datum && cfg.onHover && typeof datum._id !== 'undefined' && lastDatum !== datum) {
+            dataGroup.selectAll<never, Datum>('line').data([datum], d => d._id).join(
+              (enter) => enter.insert('line', ":first-child")
+                .attr('class', 'hover-line')
+                .attr('stroke', this.theme.lineColor)
+                .attr('stroke-width', 1)
+                .attr('transform', `translate(${stepWidth * (1 - this.theme.gap) / 2}, 0)`)
+                .attr('x1', d => scaleX(d._id as never) ?? 0)
+                .attr('y1', 0)
+                .attr('x2', d => scaleX(d._id as never) ?? 0)
+                .attr('y2', scaleY(datum._value) - 4 || 0),
+            )
+            lastDatum = datum
+            cfg.onHover(datum)
+          }
+        }
       })
     }
-    this.dataGroup?.selectAll<SVGGElement, Datum>('g')
-      .data(data, this.config.dataKey ?? ((_: Datum, i) => i))
-      .join(
-        enter => {
-          const g = enter.append('g').attr('opacity', 1).attr('transform', d => {
-            let offset = 0
-            if (this.isBandScale(this.catalogScale)) {
-              return `translate(${this.catalogScale(d.id) ?? 0}, ${(this.valueScale.range()[0] as number) + this.padding - (this.shape?.height ?? 0)})`
-            } else {
-              offset = this.getWidth(data) / 2
-            }
-            const x = this.catalogScale(d.id) as number - offset
-            return `translate(${x}, ${(this.valueScale.range()[0] as number) + this.padding - (this.shape?.height ?? 0)})`
-          })
-          const r = g.append('rect').attr('width', () => {
-            if (this.isBandScale(this.catalogScale)) {
-              return this.catalogScale.bandwidth()
-            } else {
-              const width = this.getWidth(data)
-              // console.log(width)
-              return width
-            }
-          }).attr('height', 0)
-          updateAttrs(g, r)
-          return g
-        }, update => {
-          updateAttrs(update, update.select('rect'))
-          return update
-        }, exit => {
-          exit.transition().attr('opacity', 0).remove()
-        })
     return this
   }
 
-  private getWidth (data: Datum[], padding: number = 0.1): number {
-    const range = this.catalogScale.range()
-    const domain = this.catalogScale.domain()
-    const minDiff = getMinDifference(data, (d) => d.id)
-    const width = (range[1] - range[0]) / (domain[1] - domain[0]) * minDiff
-    // console.log('width', width)
-    return width * (1 - padding)
+  private getScaleY (data: { _value: number }[]) {
+    if (this.shape === undefined) {
+      throw new Error('shape is not exists')
+    }
+    const scale = d3.scaleLinear().domain([0, d3.max(data, (d) => d._value) || 0]).range([0, this.shape.height - this.padding * 2].reverse()).nice()
+    return scale
   }
 
-  private updateAxis (config: Config): void {
-    const data = this.data
-    this.dataGroup?.attr('transform', `translate(${this.padding}, ${(this.shape?.height ?? 0) - this.padding})`)
-    this.axGroup?.attr('transform', `translate(${this.padding}, ${(this.shape?.height ?? 0) - this.padding})`)
-    this.ayGroup?.attr('transform', `translate(${this.padding}, 0)`)
-    if (data.length === 0) {
-      throw new Error('data is empty')
-    }
-    if (this.axGroup === undefined || this.ayGroup === undefined || this.shape === undefined) {
-      throw new Error('not initialized')
-    }
-    const datum = data[0]
-    const domain = d3.extent(data, d => d.id)
-    if (domain[0] === undefined || domain[1] === undefined) {
-      throw new Error('domain is undefined')
-    }
-    if (datum.id instanceof Date) {
-      const domainDate = domain as Date[]
-      domainDate[0] = new Date(domainDate[0].getTime() - getMinDifference(this.data, (d) => d.id) / 2)
-      domainDate[1] = new Date(domainDate[1].getTime() + getMinDifference(this.data, (d) => d.id) / 2)
-      this.catalogScale = d3.scaleTime().range([0, this.shape.width - this.padding * 2]).domain(domainDate)
-    } else if (typeof datum.id === 'number') {
-      const domainNumber = domain as number[]
-      this.catalogScale = d3.scaleLinear().range([0, this.shape.width - this.padding * 2]).domain(domainNumber)
-    } else if (typeof datum.id === 'string') {
-      this.catalogScale = d3.scaleBand().range([0, this.shape.width - this.padding * 2]).domain(data.map(d => (d as { id: string }).id)).padding(0.1)
-    }
-    const callXAxis = (): void => {
-      const xAxis = d3.axisBottom(this.catalogScale)
-      if (config.animate) {
-        this.axGroup?.transition().call(xAxis)
-      } else {
-        this.axGroup?.call(xAxis)
-      }
-    }
-
-    callXAxis()
-    const callYAxis = (): void => {
-      const yAxis = d3.axisLeft(this.valueScale)
-      if (config.animate) {
-        this.ayGroup?.transition().call(yAxis)
-      } else {
-        this.ayGroup?.call(yAxis)
-      }
-    }
-    if (datum.value instanceof Date) {
-      this.valueScale = d3.scaleTime().range([this.shape.height - this.padding, this.padding])
-    } else if (typeof datum.value === 'number') {
-      const domain = d3.extent(data, d => (d as { value: number }).value)
-      domain[0] = 0
+  private getScaleX (data: { _value: number; _id: string | number | Date }[], barWidth = 20) {
+    let scale
+    if (this.idIsDate(data)) {
+      const domain = d3.extent(data, (d) => d._id)
+      const deltaTime = (domain[1] as Date).getTime() - (domain[0] as Date).getTime()
+      const everyDelta = data.map((d, i) => {
+        if (i === 0) {
+          return Infinity
+        }
+        return (d._id as Date).getTime() - (data[i - 1]._id as Date).getTime()
+      })
+      const minDeltaTime = d3.min(everyDelta) ?? 0
+      const range = barWidth * deltaTime / minDeltaTime + barWidth
       if (domain[0] === undefined || domain[1] === undefined) {
-        throw new Error('domain is undefined')
+        throw new Error('domain is not exists')
       }
-      this.valueScale = d3.scaleLinear().range([this.shape.height - this.padding, this.padding]).domain(domain)
-    } else if (typeof datum.value === 'string') {
-      this.valueScale = d3.scaleBand().range([this.shape.height - this.padding, this.padding]).domain(data.map(d => (d as { value: string }).value))
+      domain[1] = new Date((domain[1] as Date).getTime() + minDeltaTime)
+      scale = d3.scaleTime().domain(domain).range([0, range]).nice()
     }
-    callYAxis()
+    if (this.idIsString(data)) {
+      scale = d3.scaleBand().domain(d3.map(data, (d) => d._id)).range([0, this.shape.width - this.padding * 2]).padding(0.1)
+    }
+    if (this.idIsNumber(data)) {
+      const domain = d3.extent(data, (d) => d._id)
+      if (domain[0] === undefined || domain[1] === undefined) {
+        throw new Error('domain is not exists')
+      }
+      scale = d3.scaleLinear().domain(domain).range([0, this.shape.width - this.padding * 2]).nice()
+    }
+    if (scale === undefined) {
+      throw new Error('cannot get scale')
+    }
+    return scale
   }
 }

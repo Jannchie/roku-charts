@@ -3,12 +3,17 @@ import * as d3 from 'd3'
 
 export abstract class RokuChart<Datum, Config> {
   abstract draw (config?: Config): void
-  config!: Config
+  config: Config = {} as Config
   data: Datum[] = []
   theme: Theme = defaultTheme
   wrapperDom?: HTMLDivElement
-  shape?: DOMRect
-  svg?: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>
+  shape = {
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  }
+  svg?: d3.Selection<SVGSVGElement, unknown, HTMLElement, unknown>
   public init (selector: string) {
     this.initSVG(selector)
     this.initResizeObserver()

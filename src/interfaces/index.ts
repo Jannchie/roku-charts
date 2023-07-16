@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Datum = Record<string, any>
 
 export interface BaseAxisConfig {

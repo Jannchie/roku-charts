@@ -7,11 +7,10 @@ import { type RokuCalendarConfig, type CalData, defaultCalendarConfig } from './
 export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
   data: CalData[] = []
   config: Required<RokuCalendarConfig> = defaultCalendarConfig
-
   weekScale?: d3.ScaleBand<string>
-  dataGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
-  xAxisGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
-  yAxisGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, any>
+  dataGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>
+  xAxisGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>
+  yAxisGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, unknown>
   selector?: string
 
   private constructor () {
@@ -26,7 +25,7 @@ export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
     return chart
   }
 
-  override setData (data: any[]): this {
+  override setData (data: CalData[]): this {
     this.data = data
     return this
   }
@@ -173,6 +172,7 @@ export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
     const binded = this.dataGroup.selectAll<SVGGElement, CalData>('g').data<CalData>(calData, d => d.date)
     binded.join((enter) => {
       const e = enter.append('g').attr('transform', d => `translate(${weekScale(d.week) ?? 0}, ${dayScale(d.day) ?? 0})`)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let rect: any = e.append('rect')
       if (config.animate) {
         rect = rect.transition().duration(this.theme.animateDuration).delay((_: CalData, i: number) => this.theme.animateDelay * i / e.data().length * Math.random() * this.theme.animateRandom)
@@ -239,7 +239,7 @@ export class RokuCal extends RokuChart<CalData, RokuCalendarConfig> {
     })
   }
 
-  private fillResults (dataMap: Map<number, any>, dateRange: Date[]) {
+  private fillResults (dataMap: Map<number, number|undefined>, dateRange: Date[]) {
     const result: CalData[] = []
     for (const date of dateRange) {
       const latest = this.data.length === 0 ? new Date() : new Date(this.data[this.data.length - 1].date)

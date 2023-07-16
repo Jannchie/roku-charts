@@ -9,6 +9,7 @@ export interface Config {
   stepWidth?: number
   itemCount: number
   padding?: number
+  valueDomain: 'from-zero' | 'auto'
   onHover?: (d: Datum) => void
 }
 
@@ -18,6 +19,7 @@ export const defaultBarConfig: Config = {
   animate: 500,
   itemCount: 10,
   padding: 0,
+  valueDomain: 'auto',
 }
 
 export class RokuBar extends RokuChart<Datum, Config> {
@@ -101,10 +103,19 @@ export class RokuBar extends RokuChart<Datum, Config> {
     const stepWidth = this.isScaleBand(scaleX) ? scaleX.step() : cfgStepWidth
     const initYOffset = innerWidth - scaleX.range()[1]!
     this.dataGroup.attr('transform', `translate(${this.padding}, ${this.padding})`)
-    const clipGroup = this.dataGroup.append('g').attr('clip-path', 'url(#clip)')
-    this.svg.append('defs').append('clipPath').attr('id', 'clip').append('rect').attr('width', innerWidth).attr('height', this.shape.height)
-    const dataGroup = clipGroup.append('g').attr('transform', `translate(${initYOffset}, 0)`)
-
+    if (this.dataGroup.select('g').empty()) {
+      this.dataGroup.append('g').attr('clip-path', 'url(#clip)').attr('class', 'data-group-inner')
+    }
+    const clipGroup = this.dataGroup.select('g')
+    if (d3.select('#clip').empty()) {
+      this.svg.append('defs').append('clipPath').attr('id', 'clip').append('rect').attr('width', innerWidth).attr('height', this.shape.height)
+    }
+    if (clipGroup.select('g').empty()) {
+      clipGroup.append('g').attr('transform', `translate(${initYOffset}, 0)`)
+    } else {
+      clipGroup.select('g').attr('transform', `translate(${initYOffset}, 0)`)
+    }
+    const dataGroup = clipGroup.select('g')
     const showingData = data.filter((d) => {
       if (this.isScaleTime(scaleX)) {
         const val = scaleX(d._id as never)
@@ -124,7 +135,6 @@ export class RokuBar extends RokuChart<Datum, Config> {
     dataGroup.selectAll('g').data(data).join(
       (enter) => {
         const res = enter.append('g')
-
         res.append('rect')
           .attr('class', 'bar-bg')
           .attr('height', innerHeight)
@@ -143,7 +153,7 @@ export class RokuBar extends RokuChart<Datum, Config> {
           })
         res.append('rect')
           .attr('class', 'bar')
-          .attr('height', d => innerHeight - scaleY(d._value) || 0)
+          .attr('height', d => d3.max([0, innerHeight - scaleY(d._value)]) ?? 0)
           .attr('width', () => {
             if (this.isScaleBand(scaleX)) {
               return scaleX.bandwidth()
@@ -167,16 +177,62 @@ export class RokuBar extends RokuChart<Datum, Config> {
           })
         return res
       },
-      (update) => update,
-      (exit) => exit.remove(),
+      (update) => {
+        update.selectAll<never, {
+          _id: string | number | Date
+          _value: number
+        }>('.bar').transition()
+          .attr('height', d => d3.max([0, innerHeight - scaleY(d._value as never)]) ?? 0)
+          .attr('width', () => {
+            if (this.isScaleBand(scaleX)) {
+              return scaleX.bandwidth()
+            }
+            return stepWidth * 0.8
+          })
+          .attr('x', (d) => {
+            if (this.isScaleTime(scaleX)) {
+              return scaleX(d._id as never)
+            }
+            return scaleX(d._id as never) || 0
+          })
+          .attr('y', (d) => {
+            if (this.shape === undefined) {
+              throw new Error('shape is not exists')
+            }
+            return scaleY(d._value)
+          })
+        update.selectAll<never, {
+          _id: string | number | Date
+          _value: number
+        }>('.bar-bg').transition()
+          .attr('height', innerHeight)
+          .attr('width', () => {
+            if (this.isScaleBand(scaleX)) { return scaleX.bandwidth() }
+            return stepWidth * (1 - this.theme.gap)
+          })
+          .attr('x', (d) => {
+            if (this.isScaleTime(scaleX)) {
+              return scaleX(d._id as never)
+            }
+            return scaleX(d._id as never) || 0
+          })
+        return update
+      },
+      (exit) => {
+        exit.remove()
+      },
     )
-
-
-    const axGroup = this.axGroup
-      .attr('clip-path', 'url(#clip)')
-      .attr('transform', `translate(${this.padding}, ${this.shape.height - this.padding})`)
-      .append('g')
-      .call(d3.axisBottom(scaleX as never))
+    console.log(this.svg.select('.x-axis-group').select('g').empty())
+    if (this.svg.select('.x-axis-group').select('g').empty()) {
+      console.log('?')
+      this.axGroup
+        .attr('clip-path', 'url(#clip)')
+        .attr('transform', `translate(${this.padding}, ${this.shape.height - this.padding})`)
+        .append('g').attr('class', 'test')
+    }
+    const axGroup = this.svg.select('.x-axis-group').select('g')
+      .call(d3.axisBottom(scaleX as never) as never)
+    console.log(axGroup.node())
     axGroup.attr('transform', `translate(${initYOffset}, 0)`)
     axGroup.selectAll('text').attr('fill', this.theme.textColor)
     axGroup.selectAll('line, path').attr('stroke', this.theme.lineColor)
@@ -217,7 +273,7 @@ export class RokuBar extends RokuChart<Datum, Config> {
         ayGroup.selectAll('line, path').attr('stroke', this.theme.lineColor)
         dataGroup.selectAll('.bar').transition().attr('height', (d) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return innerHeight - scaleY((d as any)._value) || 0
+          return d3.max([0, innerHeight - scaleY((d as any)._value)]) || 0
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         }).attr('y', (d) => scaleY((d as any)._value))
         d3.selectAll('.hover-line').remove()
@@ -255,7 +311,12 @@ export class RokuBar extends RokuChart<Datum, Config> {
     if (this.shape === undefined) {
       throw new Error('shape is not exists')
     }
-    const scale = d3.scaleLinear().domain([0, d3.max(data, (d) => d._value) || 0]).range([0, this.shape.height - this.padding * 2].reverse()).nice()
+    const domain = [0, d3.max(data, (d) => d._value) || 0]
+    const maxDomain = domain[1]
+    const minDomain = d3.min(data, (d) => d._value) || 0
+    domain[0] = d3.max([0, maxDomain - (maxDomain - minDomain) * 2]) || 0
+    console.log(minDomain, maxDomain, domain)
+    const scale = d3.scaleLinear().domain(domain).range([0, this.shape.height - this.padding * 2].reverse()).nice()
     return scale
   }
 

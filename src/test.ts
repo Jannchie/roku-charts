@@ -29,9 +29,17 @@ const data = [
   // continue with data for the rest of the year...
 ] as CalData[]
 RokuBar.new('#test-1').setConfig({ idKey: (d: Datum) => d.id }).setData([{ id: '3', value: 4 }, { id: 'bbb', value: 1 }, { id: 'ccc', value: 3 }, { id: 'ddd', value: 5 }]).draw()
-RokuBar.new('#test-3').setData(data).setConfig({
+const a = RokuBar.new('#test-3').setData(data).setConfig({
   idKey: (d) => d3.timeParse('%Y-%m-%d')(d.date)!, onHover: () => { },
 }).draw()
+
+setTimeout(() => {
+  a.setConfig({
+    itemCount: 20
+  }).draw()
+}, 1000)
+
+
 // RokuChart.New('#test-1').setData([{ id:  1, value: 4 }, { id:  2, value: 1 }, { id:  3, value: 3 }]).draw({})
 
 

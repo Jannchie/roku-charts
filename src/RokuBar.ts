@@ -8,7 +8,10 @@ export interface Config {
   animate: number
   stepWidth?: number
   itemCount: number
-  padding?: number
+  paddingLeft?: number
+  paddingRight?: number
+  paddingTop?: number
+  paddingBottom?: number
   valueDomain: 'from-zero' | 'auto'
   onHover?: (d: Datum) => void
 }
@@ -18,12 +21,14 @@ export const defaultBarConfig: Config = {
   valueKey: (d) => d.value,
   animate: 500,
   itemCount: 10,
-  padding: 0,
   valueDomain: 'auto',
 }
 
 export class RokuBar extends RokuChart<Datum, Config> {
-  padding: number = 50
+  paddingLeft = 10
+  paddingRight = 50
+  paddingTop = 10
+  paddingBottom = 20
   ayGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, never>
   axGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, never>
   dataGroup?: d3.Selection<SVGGElement, unknown, HTMLElement, never>
@@ -78,7 +83,7 @@ export class RokuBar extends RokuChart<Datum, Config> {
     return scale.hasOwnProperty('ticks')
   }
 
-  draw(config?: Partial<Config>): this {
+  draw(): this {
     if (this.svg === undefined) {
       throw new Error('svg is not exists')
     }
@@ -88,21 +93,25 @@ export class RokuBar extends RokuChart<Datum, Config> {
     if (this.dataGroup === undefined) {
       throw new Error('dataGroup is not exists')
     }
-    const cfg = { ...this.config, ...config }
-    this.config = cfg
-    this.padding = cfg.padding ? cfg.padding : this.padding
+    const cfg = this.config
+
+    this.paddingBottom = cfg.paddingBottom ? cfg.paddingBottom : this.paddingBottom
+    this.paddingTop = cfg.paddingTop ? cfg.paddingTop : this.paddingTop
+    this.paddingLeft = cfg.paddingLeft ? cfg.paddingLeft : this.paddingLeft
+    this.paddingRight = cfg.paddingRight ? cfg.paddingRight : this.paddingRight
+
     const data = this.data.map((d, i, arr) => ({
       ...d,
       _value: cfg.valueKey(d, i, arr),
       _id: cfg.idKey(d, i, arr),
     }))
-    const innerWidth = this.shape.width - this.padding * 2
-    const innerHeight = this.shape.height - this.padding * 2
+    const innerWidth = this.shape.width - this.paddingLeft - this.paddingRight
+    const innerHeight = this.shape.height - this.paddingBottom - this.paddingTop
     const cfgStepWidth = (cfg.stepWidth ? cfg.stepWidth : innerWidth / cfg.itemCount)
     const scaleX = this.getScaleX(data, cfgStepWidth)
     const stepWidth = this.isScaleBand(scaleX) ? scaleX.step() : cfgStepWidth
     const initYOffset = innerWidth - scaleX.range()[1]!
-    this.dataGroup.attr('transform', `translate(${this.padding}, ${this.padding})`)
+    this.dataGroup.attr('transform', `translate(${this.paddingLeft}, ${this.paddingTop})`)
     if (this.dataGroup.select('g').empty()) {
       this.dataGroup.append('g').attr('clip-path', 'url(#clip)').attr('class', 'data-group-inner')
     }
@@ -126,7 +135,7 @@ export class RokuBar extends RokuChart<Datum, Config> {
 
     let scaleY = this.getScaleY(showingData)
     const ayGroup = this.ayGroup
-      .attr('transform', `translate(${this.shape.width - this.padding}, ${this.padding})`)
+      .attr('transform', `translate(${this.shape.width - this.paddingRight}, ${this.paddingTop})`)
 
     ayGroup.call(d3.axisRight(scaleY).tickFormat(this.theme.valueFormat))
     ayGroup.selectAll('text').attr('fill', this.theme.textColor)
@@ -227,7 +236,7 @@ export class RokuBar extends RokuChart<Datum, Config> {
       console.log('?')
       this.axGroup
         .attr('clip-path', 'url(#clip)')
-        .attr('transform', `translate(${this.padding}, ${this.shape.height - this.padding})`)
+        .attr('transform', `translate(${this.paddingLeft}, ${this.shape.height - this.paddingBottom})`)
         .append('g').attr('class', 'test')
     }
     const axGroup = this.svg.select('.x-axis-group').select('g')
@@ -314,9 +323,11 @@ export class RokuBar extends RokuChart<Datum, Config> {
     const domain = [0, d3.max(data, (d) => d._value) || 0]
     const maxDomain = domain[1]
     const minDomain = d3.min(data, (d) => d._value) || 0
-    domain[0] = d3.max([0, maxDomain - (maxDomain - minDomain) * 2]) || 0
-    console.log(minDomain, maxDomain, domain)
-    const scale = d3.scaleLinear().domain(domain).range([0, this.shape.height - this.padding * 2].reverse()).nice()
+    if (this.config.valueDomain === 'auto') {
+      domain[0] = d3.max([0, maxDomain - (maxDomain - minDomain) * 2]) || 0
+    }
+    console.log(domain)
+    const scale = d3.scaleLinear().domain(domain).range([0, this.shape.height - this.paddingTop - this.paddingBottom].reverse()).nice()
     return scale
   }
 
@@ -340,14 +351,14 @@ export class RokuBar extends RokuChart<Datum, Config> {
       scale = d3.scaleTime().domain(domain).range([0, range])
     }
     if (this.idIsString(data)) {
-      scale = d3.scaleBand().domain(d3.map(data, (d) => d._id)).range([0, this.shape.width - this.padding * 2]).padding(0.1)
+      scale = d3.scaleBand().domain(d3.map(data, (d) => d._id)).range([0, this.shape.width - this.paddingLeft - this.paddingRight]).padding(0.1)
     }
     if (this.idIsNumber(data)) {
       const domain = d3.extent(data, (d) => d._id)
       if (domain[0] === undefined || domain[1] === undefined) {
         throw new Error('domain is not exists')
       }
-      scale = d3.scaleLinear().domain(domain).range([0, this.shape.width - this.padding * 2]).nice()
+      scale = d3.scaleLinear().domain(domain).range([0, this.shape.width - this.paddingLeft - this.paddingRight]).nice()
     }
     if (scale === undefined) {
       throw new Error('cannot get scale')

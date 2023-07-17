@@ -107,7 +107,8 @@ export class RokuBar extends RokuChart<Datum, Config> {
     }))
     const innerWidth = this.shape.width - this.paddingLeft - this.paddingRight
     const innerHeight = this.shape.height - this.paddingBottom - this.paddingTop
-    const cfgStepWidth = (cfg.stepWidth ? cfg.stepWidth : innerWidth / cfg.itemCount)
+    const itemCount = data.length < cfg.itemCount ? data.length : cfg.itemCount
+    const cfgStepWidth = (cfg.stepWidth ? cfg.stepWidth : innerWidth / itemCount)
     const scaleX = this.getScaleX(data, cfgStepWidth)
     const stepWidth = this.isScaleBand(scaleX) ? scaleX.step() : cfgStepWidth
     const initYOffset = innerWidth - scaleX.range()[1]!

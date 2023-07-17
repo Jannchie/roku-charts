@@ -231,9 +231,7 @@ export class RokuBar extends RokuChart<Datum, Config> {
         exit.remove()
       },
     )
-    console.log(this.svg.select('.x-axis-group').select('g').empty())
     if (this.svg.select('.x-axis-group').select('g').empty()) {
-      console.log('?')
       this.axGroup
         .attr('clip-path', 'url(#clip)')
         .attr('transform', `translate(${this.paddingLeft}, ${this.shape.height - this.paddingBottom})`)
@@ -241,7 +239,6 @@ export class RokuBar extends RokuChart<Datum, Config> {
     }
     const axGroup = this.svg.select('.x-axis-group').select('g')
       .call(d3.axisBottom(scaleX as never) as never)
-    console.log(axGroup.node())
     axGroup.attr('transform', `translate(${initYOffset}, 0)`)
     axGroup.selectAll('text').attr('fill', this.theme.textColor)
     axGroup.selectAll('line, path').attr('stroke', this.theme.lineColor)
@@ -326,7 +323,6 @@ export class RokuBar extends RokuChart<Datum, Config> {
     if (this.config.valueDomain === 'auto') {
       domain[0] = d3.max([0, maxDomain - (maxDomain - minDomain) * 2]) || 0
     }
-    console.log(domain)
     const scale = d3.scaleLinear().domain(domain).range([0, this.shape.height - this.paddingTop - this.paddingBottom].reverse()).nice()
     return scale
   }

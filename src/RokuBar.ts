@@ -288,7 +288,7 @@ export class RokuBar extends RokuChart<Datum, Config> {
     this.svg.call(drag as never)
     if (cfg.onHover) {
       let lastDatum: Datum | null = null
-      this.svg.on('mousemove', (e: MouseEvent) => {
+      this.svg.on('pointermove', (e: PointerEvent) => {
         e.stopPropagation()
         const target = e.target
         if (target) {

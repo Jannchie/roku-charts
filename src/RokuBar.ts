@@ -161,9 +161,13 @@ export class RokuBar extends RokuChart<Datum, Config> {
             }
             return scaleX(d._id as never) || 0
           })
+        console.log(scaleY(0))
         res.append('rect')
           .attr('class', 'bar')
-          .attr('height', d => d3.max([0, innerHeight - scaleY(d._value)]) ?? 0)
+          .attr('height', d => {
+            return Math.abs(scaleY(d._value) - scaleY(0))
+            // return d3.max([0, innerHeight - scaleY(d._value)]) ?? 0
+          })
           .attr('width', () => {
             if (this.isScaleBand(scaleX)) {
               return scaleX.bandwidth()
@@ -183,7 +187,8 @@ export class RokuBar extends RokuChart<Datum, Config> {
             if (this.shape === undefined) {
               throw new Error('shape is not exists')
             }
-            return scaleY(d._value)
+            return d._value < 0 ? scaleY(0) : scaleY(d._value)
+            // return scaleY(d._value)
           })
         return res
       },
@@ -192,7 +197,11 @@ export class RokuBar extends RokuChart<Datum, Config> {
           _id: string | number | Date
           _value: number
         }>('.bar').transition()
-          .attr('height', d => d3.max([0, innerHeight - scaleY(d._value as never)]) ?? 0)
+          .attr('height',
+            d => {
+              return Math.abs(scaleY(d._value) - scaleY(0))
+              // return d3.max([0, innerHeight - scaleY(d._value as never)]) ?? 0
+            })
           .attr('width', () => {
             if (this.isScaleBand(scaleX)) {
               return scaleX.bandwidth()
@@ -209,7 +218,8 @@ export class RokuBar extends RokuChart<Datum, Config> {
             if (this.shape === undefined) {
               throw new Error('shape is not exists')
             }
-            return scaleY(d._value)
+            return d._value < 0 ? scaleY(0) : scaleY(d._value)
+            // return scaleY(d._value)
           })
         update.selectAll<never, {
           _id: string | number | Date
@@ -226,21 +236,27 @@ export class RokuBar extends RokuChart<Datum, Config> {
             }
             return scaleX(d._id as never) || 0
           })
+        const deltaX = stepWidth * cfg.itemCount - scaleX.range()[1]
+        this?.svg?.select('.x-axis-group').select('g')
+          .call(d3.axisBottom(scaleX as never) as never).transition().attr('transform', `translate(${deltaX}, ${scaleY(0) + this.paddingTop})`)
         return update
       },
       (exit) => {
         exit.remove()
       },
     )
+    const y0 = scaleY(0)
     if (this.svg.select('.x-axis-group').select('g').empty()) {
       this.axGroup
         .attr('clip-path', 'url(#clip)')
-        .attr('transform', `translate(${this.paddingLeft}, ${this.shape.height - this.paddingBottom})`)
+        .attr('transform', `translate(${this.paddingLeft}, 0)`)
         .append('g').attr('class', 'test')
     }
     const axGroup = this.svg.select('.x-axis-group').select('g')
       .call(d3.axisBottom(scaleX as never) as never)
-    axGroup.attr('transform', `translate(${initYOffset}, 0)`)
+    const deltaX = stepWidth * cfg.itemCount - scaleX.range()[1]
+
+    axGroup.attr('transform', `translate(${deltaX}, ${y0 + this.paddingTop})`)
     axGroup.selectAll('text').attr('fill', this.theme.textColor)
     axGroup.selectAll('line, path').attr('stroke', this.theme.lineColor)
     let startX = 0
@@ -259,14 +275,13 @@ export class RokuBar extends RokuChart<Datum, Config> {
         } else if (innerWidth - deltaX > scaleX.range()[1]) {
           deltaX = innerWidth - scaleX.range()[1]
         }
+        const y0 = scaleY(0)
         dataGroup.attr('transform', `translate(${deltaX}, ${0})`)
-        axGroup.attr('transform', `translate(${deltaX}, 0)`)
+        axGroup.attr('transform', `translate(${deltaX}, ${this.paddingTop + y0})`)
       })
       .on('end', () => {
         const currentX = Number(dataGroup.attr('transform').match(/translate\((-?\d+\.?\d*), (-?\d+\.?\d*)\)/)?.[1])
         const targetX = Math.round(currentX / stepWidth) * (stepWidth)
-        dataGroup.transition().attr('transform', `translate(${targetX}, ${0})`)
-        axGroup.transition().attr('transform', `translate(${targetX}, 0)`)
         const showingData = data.filter((d) => {
           if (this.isScaleTime(scaleX)) {
             const val = scaleX(d._id as never)
@@ -275,14 +290,21 @@ export class RokuBar extends RokuChart<Datum, Config> {
           return true
         })
         scaleY = this.getScaleY(showingData)
+        const y0 = scaleY(0)
+        dataGroup.transition().attr('transform', `translate(${targetX}, ${0})`)
+        axGroup.transition().attr('transform', `translate(${targetX}, ${this.paddingTop + y0})`)
         ayGroup.transition().call(d3.axisRight(scaleY).tickFormat(this.theme.valueFormat))
         ayGroup.selectAll('text').attr('fill', this.theme.textColor)
         ayGroup.selectAll('line, path').attr('stroke', this.theme.lineColor)
         dataGroup.selectAll('.bar').transition().attr('height', (d) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return d3.max([0, innerHeight - scaleY((d as any)._value)]) || 0
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        }).attr('y', (d) => scaleY((d as any)._value))
+          return Math.abs(scaleY((d as any)._value) - scaleY(0))
+        }).attr('y', (d) => {
+          const v = (d as any)._value
+          if (v < 0) {
+            return scaleY(0)
+          }
+          return scaleY(v)
+        })
         d3.selectAll('.hover-line').remove()
       });
     this.svg.call(drag as never)
@@ -323,6 +345,10 @@ export class RokuBar extends RokuChart<Datum, Config> {
     const minDomain = d3.min(data, (d) => d._value) || 0
     if (this.config.valueDomain === 'auto') {
       domain[0] = d3.max([0, maxDomain - (maxDomain - minDomain) * 2]) || 0
+
+      if ((d3.min(data, d => d._value)?? 0) <= 0) {
+        domain[0] = minDomain * 1.1
+      }
     }
     const scale = d3.scaleLinear().domain(domain).range([0, this.shape.height - this.paddingTop - this.paddingBottom].reverse()).nice()
     return scale

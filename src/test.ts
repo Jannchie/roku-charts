@@ -25,7 +25,7 @@ const data = [
   { date: '2022-01-27', value: 10 },
   { date: '2022-01-29', value: 22 },
   { date: '2022-01-30', value: 28 },
-  { date: '2022-01-31', value: 52 },
+  { date: '2022-01-31', value: -52 },
   // continue with data for the rest of the year...
 ] as CalData[]
 RokuBar.new('#test-1').setConfig({ idKey: (d: Datum) => d.id }).setData([{ id: '3', value: 4 }, { id: 'bbb', value: 1 }, { id: 'ccc', value: 3 }, { id: 'ddd', value: 5 }]).draw()

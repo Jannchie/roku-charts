@@ -161,12 +161,11 @@ export class RokuBar extends RokuChart<Datum, Config> {
             }
             return scaleX(d._id as never) || 0
           })
-        console.log(scaleY(0))
         res.append('rect')
           .attr('class', 'bar')
           .attr('height', d => {
-            return Math.abs(scaleY(d._value) - scaleY(0))
-            // return d3.max([0, innerHeight - scaleY(d._value)]) ?? 0
+            const val = Math.abs(scaleY(d._value) - scaleY(0))
+            return isNaN(val) ? 0 : val
           })
           .attr('width', () => {
             if (this.isScaleBand(scaleX)) {
@@ -297,7 +296,8 @@ export class RokuBar extends RokuChart<Datum, Config> {
         ayGroup.selectAll('text').attr('fill', this.theme.textColor)
         ayGroup.selectAll('line, path').attr('stroke', this.theme.lineColor)
         dataGroup.selectAll('.bar').transition().attr('height', (d) => {
-          return Math.abs(scaleY((d as any)._value) - scaleY(0))
+          const val = Math.abs(scaleY((d as any)._value) - scaleY(0))
+          return isNaN(val) ? 0 : val
         }).attr('y', (d) => {
           const v = (d as any)._value
           if (v < 0) {

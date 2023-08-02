@@ -16,7 +16,10 @@ export abstract class RokuChart<Datum, Config> {
   svg?: d3.Selection<SVGSVGElement, unknown, HTMLElement, unknown>
   public init (selector: string) {
     this.initSVG(selector)
-    this.initResizeObserver()
+    // if is macos or ios
+    if (!navigator.userAgent.match(/(Mac|iPhone|iPod|iPad)/i)) {
+      this.initResizeObserver()
+    }
   }
 
   setData (data: Datum[]): this {
